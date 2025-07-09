@@ -1,0 +1,138 @@
+INCLUDE Irvine32.inc
+
+.data
+    gameTitle BYTE "===== NUMBER GUESSING GAME =====", 0
+    prompt BYTE "Guess a number (1-10): ", 0
+    highMsg BYTE "Too high! Try again.", 0
+    lowMsg BYTE "Too low! Try again.", 0
+    correctMsg BYTE "Correct! You win!", 0
+    loseMsg BYTE "Out of lives! You lose. The correct number was: ", 0
+    livesMsg BYTE "Lives left: ", 0
+    winMsg BYTE "***** YOU WIN! *****", 0
+    deadMsg BYTE "***** GAME OVER - YOU ARE DEAD! *****", 0
+    newline BYTE 0Dh,0Ah,0
+    lives BYTE 3  ; Player starts with 3 lives
+    secretNumber BYTE ?  ; The random number
+
+.code
+main PROC
+    call Clrscr
+    call printCenteredTitle
+
+    ; Generate a random number (1-10)
+call Randomize   ; Initialize random seed (IMPORTANT)
+mov eax, 10
+call RandomRange
+inc eax          ; Convert range (0-9) to (1-10)
+mov secretNumber, al  ; Store the random number
+
+
+guessLoop:
+    call Crlf
+    mov edx, OFFSET livesMsg
+    call WriteString
+    movzx eax, lives
+    call WriteDec  ; Show remaining lives
+    call Crlf
+
+    mov edx, OFFSET prompt
+    call WriteString
+    call ReadDec  ; Read user's guess
+    call Crlf
+
+    ; Compare input with the random number
+    movzx ebx, secretNumber
+    cmp eax, ebx
+    je correctGuess  ; If equal, player wins
+
+    ja tooHigh  ; If guess > secret number, jump to "too high"
+    jb tooLow   ; If guess < secret number, jump to "too low"
+
+tooLow:
+    mov edx, OFFSET lowMsg
+    call WriteString
+    jmp reduceLife
+
+tooHigh:
+    mov edx, OFFSET highMsg
+    call WriteString
+
+reduceLife:
+    call Crlf
+    dec lives
+    cmp lives, 0
+    je loseGame  ; If lives == 0, player loses
+    jmp guessLoop  ; Otherwise, ask again
+
+correctGuess:
+    call Crlf
+    mov edx, OFFSET correctMsg
+    call WriteString
+    call Crlf
+    call printCenteredWin
+    jmp endGame
+
+loseGame:
+    call Crlf
+    mov edx, OFFSET loseMsg
+    call WriteString
+    movzx eax, secretNumber
+    call WriteDec
+    call Crlf
+    call printCenteredDead
+
+endGame:
+    call WaitMsg
+    exit
+main ENDP
+
+; -------------------------------------------------
+; Prints the game title centered in the console
+; -------------------------------------------------
+printCenteredTitle PROC
+    mov edx, OFFSET newline
+    call WriteString
+    mov ecx, 10  ; Spaces to center
+centerLoop1:
+    mov al, ' '  ; Print spaces for centering
+    call WriteChar
+    loop centerLoop1
+    mov edx, OFFSET gameTitle
+    call WriteString
+    call Crlf
+    ret
+printCenteredTitle ENDP
+
+; -------------------------------------------------
+; Prints "YOU WIN!" centered in the console
+; -------------------------------------------------
+printCenteredWin PROC
+    call Crlf
+    mov ecx, 15  ; Spaces to center
+centerLoop2:
+    mov al, ' '
+    call WriteChar
+    loop centerLoop2
+    mov edx, OFFSET winMsg
+    call WriteString
+    call Crlf
+    ret
+printCenteredWin ENDP
+
+; -------------------------------------------------
+; Prints "DEAD!" centered in the console
+; -------------------------------------------------
+printCenteredDead PROC
+    call Crlf
+    mov ecx, 10  ; Spaces to center
+centerLoop3:
+    mov al, ' '
+    call WriteChar
+    loop centerLoop3
+    mov edx, OFFSET deadMsg
+    call WriteString
+    call Crlf
+    ret
+printCenteredDead ENDP
+
+END main
